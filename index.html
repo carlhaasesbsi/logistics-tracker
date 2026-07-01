@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Logistics Tracker — Live View</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f1f5f9;color:#1e293b;min-height:100vh}
+
+.header{background:#1b3a5c;color:#fff;padding:0 24px;height:58px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 2px 6px rgba(0,0,0,.2)}
+.header-title{font-size:17px;font-weight:700;letter-spacing:-.3px;display:flex;align-items:center;gap:9px}
+.freshness{font-size:12px;color:rgba(255,255,255,.6);display:flex;align-items:center;gap:6px}
+.fresh-dot{width:7px;height:7px;border-radius:50%;background:#16a34a}
+.fresh-dot.stale{background:#d97706}
+.fresh-dot.old{background:#dc2626}
+
+.main{padding:18px 24px;max-width:1500px;margin:0 auto}
+
+.stats-bar{display:flex;gap:12px;margin-bottom:18px;flex-wrap:wrap}
+.stat-card{background:#fff;border-radius:8px;padding:12px 18px;border:1px solid #e2e8f0;flex:1;min-width:140px}
+.stat-label{font-size:10px;color:#94a3b8;text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px}
+.stat-value{font-size:20px;font-weight:700;color:#1e293b}
+
+/* Summary */
+.summary-card{background:#fff;border-radius:8px;border:1px solid #e2e8f0;margin-bottom:18px;overflow:hidden}
+.summary-hd{padding:12px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #e2e8f0;cursor:pointer;user-select:none}
+.summary-hd:hover{background:#f8fafc}
+.summary-hd-left{display:flex;align-items:center;gap:10px}
+.summary-title{font-size:13px;font-weight:700;color:#1e293b}
+.summary-count{font-size:12px;color:#64748b;background:#f1f5f9;padding:2px 8px;border-radius:99px}
+.summary-toggle{font-size:11px;color:#94a3b8}
+
+.sum-table{width:100%;border-collapse:collapse;font-size:13px}
+.sum-table th{background:#f8fafc;color:#64748b;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;padding:8px 12px;text-align:left;border-bottom:1px solid #e2e8f0;white-space:nowrap}
+.sum-table td{padding:9px 12px;border-bottom:1px solid #f1f5f9;color:#374151;vertical-align:middle}
+.sum-table tr:last-child td{border-bottom:none}
+.sum-table tbody tr:hover td{background:#f8fafc}
+
+.eta-chip{display:inline-flex;align-items:center;gap:5px;font-weight:600;font-size:12px}
+.eta-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.no-active{padding:24px;text-align:center;color:#94a3b8;font-size:13px}
+
+/* Accordion */
+.projects-list{display:flex;flex-direction:column;gap:8px}
+.project-card{background:#fff;border-radius:8px;border:1px solid #e2e8f0;overflow:hidden;transition:box-shadow .15s}
+.project-card:hover{box-shadow:0 2px 10px rgba(0,0,0,.07)}
+.project-header{padding:13px 16px;display:flex;align-items:center;gap:10px;cursor:pointer;user-select:none;min-height:54px}
+.project-header:hover{background:#f8fafc}
+.chevron{width:18px;height:18px;color:#94a3b8;flex-shrink:0;transition:transform .2s}
+.project-card.open .chevron{transform:rotate(90deg)}
+.project-name{font-size:14px;font-weight:600;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+.proj-stats{display:flex;align-items:center;gap:18px;flex-shrink:0;margin-right:4px}
+.ps{text-align:right}
+.ps-lbl{font-size:10px;color:#94a3b8;text-transform:uppercase;letter-spacing:.4px}
+.ps-val{font-size:13px;font-weight:600;color:#374151}
+.ps-val.red{color:#dc2626}
+.proj-prog{display:flex;align-items:center;gap:7px;min-width:130px}
+.prog-wrap{flex:1;background:#e2e8f0;border-radius:99px;height:6px;overflow:hidden}
+.prog-fill{height:100%;border-radius:99px;transition:width .3s}
+.prog-lbl{font-size:12px;font-weight:600;color:#374151;min-width:34px;text-align:right}
+
+.badge{padding:2px 8px;border-radius:99px;font-size:11px;font-weight:600;white-space:nowrap;display:inline-block}
+.b-blue{background:#dbeafe;color:#1d4ed8}
+.b-gray{background:#f1f5f9;color:#64748b}
+.b-green{background:#dcfce7;color:#15803d}
+.b-amber{background:#fef3c7;color:#b45309}
+
+.ship-panel{display:none;border-top:1px solid #e2e8f0}
+.project-card.open .ship-panel{display:block}
+.table-wrap{overflow-x:auto}
+.ship-table{width:100%;border-collapse:collapse;font-size:13px}
+.ship-table th{background:#f8fafc;color:#64748b;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;padding:8px 12px;text-align:left;border-bottom:1px solid #e2e8f0;white-space:nowrap}
+.ship-table td{padding:10px 12px;border-bottom:1px solid #f1f5f9;color:#374151;vertical-align:middle}
+.ship-table tr:last-child td{border-bottom:none}
+.ship-table tbody tr:hover td{background:#f8fafc}
+.cell-prog{display:flex;align-items:center;gap:6px;min-width:100px}
+.cell-prog .prog-wrap{flex:1;height:5px}
+.cell-prog .prog-lbl{font-size:11px;min-width:28px}
+.no-ships{padding:22px;text-align:center;color:#94a3b8;font-size:13px}
+
+.loading{text-align:center;padding:60px 20px;color:#94a3b8}
+.loading h3{font-size:17px;color:#475569;margin-bottom:8px}
+
+/* Print */
+@media print {
+  @page{size:landscape;margin:1.2cm}
+  body>*:not(#printFrame){display:none!important}
+  #printFrame{display:block!important}
+}
+#printFrame{display:none}
+.pf-title{font-size:15px;font-weight:700;color:#1e293b;margin-bottom:4px}
+.pf-sub{font-size:11px;color:#64748b;margin-bottom:14px}
+.pf-table{width:100%;border-collapse:collapse;font-size:11px}
+.pf-table th{background:#1b3a5c;color:#fff;padding:7px 10px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.4px}
+.pf-table td{padding:6px 10px;border-bottom:1px solid #e2e8f0;color:#374151}
+.pf-table tr:nth-child(even) td{background:#f8fafc}
+.pf-overdue{color:#dc2626;font-weight:600}
+.pf-amber{color:#d97706;font-weight:600}
+.pf-green{color:#15803d;font-weight:600}
+
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:3px}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-title">📦 Logistics Tracker <span style="opacity:.5;font-size:13px;font-weight:400">— Live View</span></div>
+  <div class="freshness">
+    <div class="fresh-dot" id="freshDot"></div>
+    <span id="freshLabel">Loading…</span>
+    <button onclick="printSummary()" style="margin-left:12px;padding:5px 12px;border-radius:6px;border:1px solid rgba(255,255,255,.3);background:transparent;color:rgba(255,255,255,.8);font-size:12px;cursor:pointer">🖨️ Export PDF</button>
+  </div>
+</div>
+
+<div class="main" id="appMain">
+  <div class="loading"><h3>Loading data…</h3><p>Fetching latest logistics data.</p></div>
+</div>
+
+<div id="printFrame"></div>
+
+<script>
+let db = { projects: [] };
+
+// ── Helpers ──────────────────────────────────
+function $$(n){ return '$'+(parseFloat(n)||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function fmtDate(v){
+  if(!v)return'—';
+  const d=new Date(v+'T00:00:00');
+  return isNaN(d)?v:d.toLocaleDateString('en-CA',{year:'numeric',month:'short',day:'numeric'});
+}
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function piBalance(t,p){ return (parseFloat(t)||0)*(1-(parseFloat(p)||0)/100); }
+function projStats(p){
+  const s=p.shipments||[];
+  const tot=s.reduce((a,x)=>a+(parseFloat(x.piTotal)||0),0);
+  const bal=s.reduce((a,x)=>a+piBalance(x.piTotal,x.percentPaid),0);
+  return{tot,bal,pct:tot>0?(tot-bal)/tot*100:0};
+}
+function badge(val,kind){
+  if(!val)return'';
+  const v=val.toLowerCase();
+  let c='b-gray';
+  if(kind==='group') c=v==='active'?'b-blue':'b-gray';
+  else if(kind==='itemStatus') c=v==='completed'?'b-green':v==='in progress'?'b-amber':'b-gray';
+  return`<span class="badge ${c}">${esc(val)}</span>`;
+}
+function progBar(pct,minW){
+  const p=Math.min(Math.max(parseFloat(pct)||0,0),100);
+  const col=p>=100?'#16a34a':p>=50?'#2563eb':'#d97706';
+  return`<div class="cell-prog" style="min-width:${minW||100}px">
+    <div class="prog-wrap"><div class="prog-fill" style="width:${p.toFixed(1)}%;background:${col}"></div></div>
+    <span class="prog-lbl">${p.toFixed(0)}%</span></div>`;
+}
+function etaInfo(etaStr){
+  if(!etaStr)return{label:'—',color:'#94a3b8',dot:'#cbd5e1',days:null};
+  const eta=new Date(etaStr+'T00:00:00');
+  const days=Math.round((eta-new Date())/86400000);
+  if(days<0) return{label:fmtDate(etaStr)+` (${Math.abs(days)}d overdue)`,color:'#dc2626',dot:'#dc2626',days};
+  if(days<=14)return{label:fmtDate(etaStr)+` (${days}d)`,color:'#d97706',dot:'#d97706',days};
+  return{label:fmtDate(etaStr)+` (${days}d)`,color:'#15803d',dot:'#16a34a',days};
+}
+
+// ── Freshness indicator ───────────────────────
+function setFreshness(isoStr){
+  if(!isoStr){ document.getElementById('freshLabel').textContent='Unknown age'; return; }
+  const d=new Date(isoStr);
+  const hours=Math.round((new Date()-d)/3600000);
+  const dot=document.getElementById('freshDot');
+  const lbl=document.getElementById('freshLabel');
+  const dateStr=d.toLocaleDateString('en-CA',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
+  lbl.textContent=`Updated ${dateStr} (${hours<1?'<1h':hours+'h'} ago)`;
+  if(hours<=24){dot.className='fresh-dot';}
+  else if(hours<=48){dot.className='fresh-dot stale';}
+  else{dot.className='fresh-dot old';}
+}
+
+// ── Render ───────────────────────────────────
+function render(){
+  const projects=[...db.projects].sort((a,b)=>a.name.localeCompare(b.name));
+  document.getElementById('appMain').innerHTML=renderSummaryHtml(projects);
+}
+
+function renderSummaryHtml(projects){
+  const rows=[];
+  projects.forEach(p=>{
+    (p.shipments||[]).forEach(s=>{
+      if((s.itemStatus||'')!=='Completed'&&s.containerInfo) rows.push({proj:p,ship:s});
+    });
+  });
+  rows.sort((a,b)=>{
+    const da=a.ship.eta?new Date(a.ship.eta+'T00:00:00').getTime():Infinity;
+    const db_=b.ship.eta?new Date(b.ship.eta+'T00:00:00').getTime():Infinity;
+    return da-db_;
+  });
+  const body=rows.length?`<div style="overflow-x:auto"><table class="sum-table">
+    <thead><tr><th>ETA</th><th>Delivery ETA</th><th>Container No.</th><th>Sales Order</th><th>Project</th><th>Item</th><th>Item Status</th></tr></thead>
+    <tbody>${rows.map(({proj,ship})=>{
+      const eta=etaInfo(ship.eta);
+      const deta=etaInfo(ship.deliveryEta);
+      return`<tr>
+        <td><div class="eta-chip" style="color:${eta.color}"><div class="eta-dot" style="background:${eta.dot}"></div>${esc(eta.label)}</div></td>
+        <td>${ship.deliveryEta?`<div class="eta-chip" style="color:${deta.color}"><div class="eta-dot" style="background:${deta.dot}"></div>${esc(deta.label)}</div>`:'—'}</td>
+        <td>${esc(ship.containerInfo)||'—'}</td>
+        <td>${esc(ship.salesOrder)||'—'}</td>
+        <td style="font-weight:600">${esc(proj.name)}</td>
+        <td>${esc(ship.name)||'—'}</td>
+        <td>${badge(ship.itemStatus,'itemStatus')}</td>
+      </tr>`;
+    }).join('')}</tbody></table></div>`
+  :`<div class="no-active">No active in-transit shipments.</div>`;
+
+  return`<div class="summary-card">
+    <div class="summary-hd" style="cursor:default">
+      <div class="summary-hd-left">
+        <span class="summary-title">🚢 Active Shipments</span>
+        <span class="summary-count">${rows.length} in transit</span>
+      </div>
+    </div>
+    <div id="summaryBody">${body}</div>
+  </div>`;
+}
+
+function renderProject(p){
+  const st=projStats(p);
+  const col=st.pct>=100?'#16a34a':st.pct>=50?'#2563eb':'#d97706';
+  const ships=p.shipments||[];
+  const rows=ships.length?ships.map(s=>{
+    const bal=piBalance(s.piTotal,s.percentPaid);
+    return`<tr>
+      <td style="font-weight:500">${esc(s.name)||'—'}</td>
+      <td>${s.quantity!=null?s.quantity:'—'}</td>
+      <td>${esc(s.manufacturer)||'—'}</td>
+      <td>${esc(s.salesOrder)||'—'}</td>
+      <td>${esc(s.manfQuoteNo)||'—'}</td>
+      <td>${fmtDate(s.orderDate)}</td>
+      <td>${s.piTotal!=null?$$(s.piTotal):'—'}</td>
+      <td>${progBar(s.percentPaid,100)}</td>
+      <td style="color:#dc2626;font-weight:600">${$$(bal)}</td>
+      <td>${fmtDate(s.etd)}</td>
+      <td>${fmtDate(s.eta)}</td>
+      <td>${badge(s.itemStatus,'itemStatus')}</td>
+    </tr>`;
+  }).join(''):'';
+
+  const shipPanel=ships.length
+    ?`<div class="table-wrap"><table class="ship-table">
+        <thead><tr><th>Item</th><th>QTY</th><th>Manufacturer</th><th>Sales Order</th><th>Manf. Quote No.</th><th>Order Date</th><th>PI Total</th><th>% Paid</th><th>PI Balance</th><th>ETD</th><th>ETA</th><th>Item Status</th></tr></thead>
+        <tbody>${rows}</tbody></table></div>`
+    :`<div class="no-ships">No shipments.</div>`;
+
+  return`<div class="project-card" id="pv_${esc(p.id)}">
+    <div class="project-header" onclick="this.closest('.project-card').classList.toggle('open')">
+      <svg class="chevron" viewBox="0 0 20 20" fill="currentColor">
+        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+      </svg>
+      <div class="project-name">${esc(p.name)}</div>
+      ${badge(p.group,'group')}
+      ${p.status?badge(p.status,'status'):''}
+      <div class="proj-stats">
+        <div class="ps"><div class="ps-lbl">PI Total</div><div class="ps-val">${$$(st.tot)}</div></div>
+        <div class="ps"><div class="ps-lbl">Balance</div><div class="ps-val red">${$$(st.bal)}</div></div>
+        <div class="proj-prog">
+          <div class="prog-wrap"><div class="prog-fill" style="width:${st.pct.toFixed(1)}%;background:${col}"></div></div>
+          <span class="prog-lbl">${st.pct.toFixed(0)}%</span>
+        </div>
+      </div>
+    </div>
+    <div class="ship-panel">${shipPanel}</div>
+  </div>`;
+}
+
+// ── PDF Export ───────────────────────────────
+function printSummary(){
+  const rows=[];
+  db.projects.forEach(p=>{
+    (p.shipments||[]).forEach(s=>{
+      if((s.itemStatus||'')!=='Completed'&&s.containerInfo) rows.push({proj:p,ship:s});
+    });
+  });
+  rows.sort((a,b)=>{
+    const da=a.ship.eta?new Date(a.ship.eta+'T00:00:00').getTime():Infinity;
+    const db_=b.ship.eta?new Date(b.ship.eta+'T00:00:00').getTime():Infinity;
+    return da-db_;
+  });
+  const dateStr=new Date().toLocaleDateString('en-CA',{year:'numeric',month:'long',day:'numeric'});
+  const rowsHtml=rows.map(({proj,ship})=>{
+    const eta=etaInfo(ship.eta);
+    const deta=etaInfo(ship.deliveryEta);
+    const cls=eta.days===null?'':eta.days<0?'pf-overdue':eta.days<=14?'pf-amber':'pf-green';
+    const dcls=deta.days===null?'':deta.days<0?'pf-overdue':deta.days<=14?'pf-amber':'pf-green';
+    return`<tr>
+      <td class="${cls}">${esc(eta.label)}</td>
+      <td class="${dcls}">${ship.deliveryEta?esc(deta.label):'—'}</td>
+      <td>${esc(ship.containerInfo)||'—'}</td>
+      <td>${esc(ship.salesOrder)||'—'}</td>
+      <td>${esc(proj.name)}</td>
+      <td>${esc(ship.name)||'—'}</td>
+      <td>${esc(ship.itemStatus)||'—'}</td>
+    </tr>`;
+  }).join('');
+  document.getElementById('printFrame').innerHTML=`
+    <div class="pf-title">Active Shipments — In Transit</div>
+    <div class="pf-sub">Generated ${dateStr} · ${rows.length} shipment${rows.length!==1?'s':''} with container assigned</div>
+    <table class="pf-table">
+      <thead><tr><th>ETA</th><th>Delivery ETA</th><th>Container No.</th><th>Sales Order</th><th>Project</th><th>Item</th><th>Status</th></tr></thead>
+      <tbody>${rowsHtml}</tbody>
+    </table>`;
+  window.print();
+}
+
+// ── Load data ────────────────────────────────
+function loadFromFile(file) {
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const data = JSON.parse(ev.target.result);
+      if (!data.projects) throw new Error('Invalid file');
+      db = data;
+      // Use embedded timestamp if present, otherwise fall back to the file's own modified date
+      setFreshness(data.lastExported || new Date(file.lastModified).toISOString());
+      render();
+    } catch(e) {
+      alert('Could not read file: ' + e.message);
+    }
+  };
+  reader.readAsText(file);
+}
+
+function showFilePicker() {
+  document.getElementById('appMain').innerHTML = `
+    <div class="loading">
+      <h3>Load data.json</h3>
+      <p style="margin-bottom:20px">Select the <strong>data.json</strong> file exported from your Logistics Tracker.</p>
+      <label style="display:inline-flex;align-items:center;gap:8px;padding:10px 20px;background:#2563eb;color:#fff;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600">
+        📂 Choose data.json
+        <input type="file" accept=".json" style="display:none" onchange="loadFromFile(this.files[0])">
+      </label>
+    </div>`;
+  document.getElementById('freshLabel').textContent = 'No data loaded';
+}
+
+fetch('data.json?t='+Date.now())
+  .then(r=>{ if(!r.ok) throw new Error(); return r.json(); })
+  .then(data=>{ db=data; setFreshness(data.lastExported||null); render(); })
+  .catch(()=> showFilePicker());
+</script>
+</body>
+</html>
