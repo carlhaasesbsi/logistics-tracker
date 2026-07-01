@@ -344,8 +344,17 @@ function showFilePicker() {
 }
 
 fetch('data.json?t='+Date.now())
-  .then(r=>{ if(!r.ok) throw new Error(); return r.json(); })
-  .then(data=>{ db=data; setFreshness(data.lastExported||null); render(); })
+  .then(r=>{
+    if(!r.ok) throw new Error();
+    const lastMod = r.headers.get('Last-Modified');
+    return r.json().then(data=>({ data, lastMod }));
+  })
+  .then(({data, lastMod})=>{
+    db=data;
+    // Use embedded timestamp, or server's Last-Modified header, or file's own date
+    setFreshness(data.lastExported || (lastMod ? new Date(lastMod).toISOString() : null));
+    render();
+  })
   .catch(()=> showFilePicker());
 </script>
 </body>
