@@ -1,5 +1,5 @@
 {
-  "lastExported": "2026-07-02T14:26:37.815Z",
+  "lastExported": "2026-07-07T20:10:51.863Z",
   "projects": [
     {
       "id": "_3k3przsmp45wb00",
@@ -20,21 +20,6 @@
           "containerInfo": "OOCU5983870",
           "salesOrder": "S00365",
           "eta": "2026-07-01",
-          "deliveryEta": "2026-07-02",
-          "itemStatus": "In Progress"
-        }
-      ]
-    },
-    {
-      "id": "_wvlj883mp45wb00",
-      "name": "710 E 56th Ave (Spire)",
-      "shipments": [
-        {
-          "id": "_ld23c1qmp45wb01",
-          "name": "Multiple",
-          "containerInfo": "ONEU7644716",
-          "salesOrder": "S00256 / S00259",
-          "eta": "2026-06-24",
           "deliveryEta": "2026-07-02",
           "itemStatus": "In Progress"
         }
@@ -137,7 +122,7 @@
         {
           "id": "_dhvzj7gmp45wb01",
           "name": "BBXSN",
-          "containerInfo": "EVER ELITE/0478-184E",
+          "containerInfo": "TGBU4272933",
           "salesOrder": "",
           "eta": "2026-06-28",
           "deliveryEta": "",
@@ -146,7 +131,7 @@
         {
           "id": "_micc178mp45wb01",
           "name": "BBXS",
-          "containerInfo": "EVER ELITE/0478-184E",
+          "containerInfo": "TGBU4272933",
           "salesOrder": "",
           "eta": "2026-06-28",
           "deliveryEta": "",
